@@ -40,3 +40,4 @@ def main():
         z.hgCmd("import -m \"%s\" /tmp/%s.patch" % (msg, log['revision']))
 
     z.hgCmd("update default")
+    print "Backport OK."
