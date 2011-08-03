@@ -7,6 +7,7 @@ from zutils import Zotonic, errorMsg
 def main():
     parser = optparse.OptionParser()
     parser.add_option("-r", "--revision", help="Which revision to backport", default=None)
+    parser.add_option("-n", "--pretend", help="Only pretend to backport", action='store_true')
  
     opts, branches = parser.parse_args()
 
@@ -28,6 +29,9 @@ def main():
     print "Will backport revision %s to %s" % (log['revision'], ", ".join(branches))
     print "(%s)" % log['summary']
     print 
+
+    if opts.pretend:
+        return
 
     z.hgCmd("export %s > /tmp/%s.patch" % (log['revision'], log['revision']))
 
