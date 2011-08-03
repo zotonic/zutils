@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+import time
+import sys
+import os
+import re
+import zutils
+from zutils import Version, cmdOutput
+
+z = zutils.Zotonic()
+
+if len(sys.argv) == 1:
+    releaseVersion = z.nextVersion()
+elif len(sys.argv) == 2:
+    releaseVersion = sys.argv[1]
+else:
+    raise Exception("Usage: z-mkrelease <version>")
+
+
+if len(z.getLog(releaseVersion)) <= 1:
+    raise Exception("nothing to release for version " + releaseVersion)
+if releaseVersion in z.versions:
+    raise Exception("Already released: " + releaseVersion)
+
+if Version(releaseVersion).prev not in z.versions:
+    raise Exception("Version numbers have to be sequential: " + releaseVersion)
+
+
+## GO TO RELEASE BRANCH
+
+os.system("hg checkout release-%s" % Version(releaseVersion).featureversion)
+
+
+## VERSION NUMBERS
+
+os.system("sed -e 's/ZOTONIC_VERSION, \".*\"/ZOTONIC_VERSION, \"%s\"/' -i %s/include/zotonic_release.hrl" % (releaseVersion, z.basedir))
+os.system("sed -e 's/{vsn, \".*\"/{vsn, \"%s\"/' -i %s/src/zotonic.app" % (releaseVersion, z.basedir))
+
+
+## CHANGE LOG
+
+changelogFile = "%s/doc/changelogs/%s.txt" % (z.basedir, releaseVersion)
+fp = open(changelogFile, "w")
+hdr = "Zotonic %s" % releaseVersion
+fp.write(hdr+"\n")
+fp.write("="*len(hdr) + "\n")
+fp.write("\n")
+fp.write("Released on %s by %s.\n" % (time.strftime("%Y-%m-%d %H:%M", time.localtime()), os.environ['USER']))
+fp.write("\n")
+fp.write("\n")
+
+z.printLog(fp, releaseVersion)
+fp.close()
+
+# launch editor to finetine the change log
+editor = os.environ.get('EDITOR', 'vi')
+os.system("%s %s" % (editor, changelogFile))
+
+os.system("hg add %s" % changelogFile)
+
+
+## NEWS FILE
+
+l = open("%s/NEWS" % z.basedir, "r").readlines()
+hdr = "Release %s, released on %s" % (releaseVersion, time.strftime("%Y-%m-%d", time.localtime()))
+l = l[:3] + [hdr+"\n", "-"*len(hdr)+"\n", "\n",
+             "This is a bugfix release. See doc/changelogs/%s.txt for all the\n" % releaseVersion, "relevant bugfixes.\n", "\n\n"] + l[3:]
+open("%s/NEWS" % z.basedir, "w").write("".join(l))
+
+## COMMIT, TAG
+
+os.system("hg ci -m 'Created release %s.'" % releaseVersion)
+os.system("hg tag release-%s" % releaseVersion)
+
+
+## CREATE ARCHIVE
+
+os.system("hg archive -t zip -p zotonic zotonic-%s.zip" % releaseVersion)
+print "Created archive zotonic-%s.zip" % releaseVersion
+
+
+# back to where we started
+os.system("hg checkout default")
