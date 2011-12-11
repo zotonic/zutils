@@ -12,7 +12,7 @@ def cmdOutput(cmd):
 
 
 class Zotonic(object):
-    """ Utility class representing a zotonic working copy. """
+    """ Utility class representing a Zotonic working copy. """
 
     def __init__(self):
         if os.path.exists("bin/zotonic"):
@@ -20,12 +20,12 @@ class Zotonic(object):
         else:
             executable = "zotonic"
         self.basedir = cmdOutput("echo $(dirname $(dirname $(dirname `%s sitedir t`)))" % executable).strip()
-        self.versions = self.hgCmd("tags|grep ^release|awk '{print $1}'|awk -F- '{print $2}'").strip().split("\n")
-        self.releaseBranches = self.hgCmd("branches|grep ^release|awk '{print $1}'|awk -F- '{print $2}'").strip().split("\n")
+        self.versions = sorted(self.gitCmd("tag|grep ^release|awk '{print $1}'|awk -F- '{print $2}'").strip().split("\n"))[::-1]
+        self.releaseBranches = sorted(self.gitCmd("branch|grep ^..release|awk '{print $1}'|awk -F- '{print $2}'").strip().split("\n"))[::-1]
 
 
-    def hgCmd(self, cmd):
-        return cmdOutput("hg -R %s %s" % (self.basedir, cmd))
+    def gitCmd(self, cmd):
+        return cmdOutput("git --work-tree=%s %s" % (self.basedir, cmd))
 
     @property
     def latestReleaseBranch(self):
@@ -43,11 +43,12 @@ class Zotonic(object):
         return Version(self.latestVersion(releaseBranch)).next
 
 
-    def getLog(self, version):
+    def calcLog(self, version):
         # check if there is a next version
         v = Version(version)
 
         branch = "release-%s" % v.featureversion
+
         if v.featureversion not in self.releaseBranches:
             raise Exception("Branch not found: " + branch)
 
@@ -60,37 +61,16 @@ class Zotonic(object):
         else:
             to = "release-%s" % v
 
-        log = self.hgCmd("log -b %s -r %s:%s" % (branch, frm, to))
-
-        log = [self.log2dict(s) for s in log.strip().split("\n\n")]
-        return log
-
-
-    def log2dict(self, msg):
-        d = dict([re.split(":\s+", l.strip(), 1) for l in msg.split("\n") if l.strip()])
-        d['revision'],d['revision_hash'] = d['changeset'].split(':')
-        return d
+        return (frm, to)
 
 
     def printLog(self, buf, version):
-        from collections import defaultdict
-        by_author = defaultdict(list)
-
-        for l in self.getLog(version):
-            author = l['user'].split(" ")[0]
-            by_author[author].append(l)
-
-        for author in by_author.keys():
-            buf.write(author+"\n")
-            buf.write("-" * len(author)+"\n")
-            buf.write("\n")
-            for l in by_author[author]:
-                buf.write(" * %s" % l['summary']+"\n")
-            buf.write("\n")
+        frm, to = self.calcLog(version)
+        buf.write(self.gitCmd("shortlog %s..%s" % (frm, to)))
 
 
     def getCurrentBranch(self):
-        return self.hgCmd("branch").strip()
+        return self.gitCmd("name-rev --name-only HEAD").strip()
 
 
 

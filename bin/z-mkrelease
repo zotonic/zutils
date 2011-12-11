@@ -15,9 +15,6 @@ elif len(sys.argv) == 2:
 else:
     raise Exception("Usage: z-mkrelease <version>")
 
-
-if len(z.getLog(releaseVersion)) <= 1:
-    raise Exception("nothing to release for version " + releaseVersion)
 if releaseVersion in z.versions:
     raise Exception("Already released: " + releaseVersion)
 
@@ -27,7 +24,7 @@ if Version(releaseVersion).prev not in z.versions:
 
 ## GO TO RELEASE BRANCH
 
-os.system("hg checkout release-%s" % Version(releaseVersion).featureversion)
+os.system("git checkout release-%s" % Version(releaseVersion).featureversion)
 
 
 ## VERSION NUMBERS
@@ -55,8 +52,9 @@ fp.close()
 editor = os.environ.get('EDITOR', 'vi')
 os.system("%s %s" % (editor, changelogFile))
 
-os.system("hg add %s" % changelogFile)
+os.system("git add %s" % changelogFile)
 
+print "............................... releasing................."
 
 ## NEWS FILE
 
@@ -67,16 +65,15 @@ l = l[:3] + [hdr+"\n", "-"*len(hdr)+"\n", "\n",
 open("%s/NEWS" % z.basedir, "w").write("".join(l))
 
 ## COMMIT, TAG
-
-os.system("hg ci -m 'Created release %s.'" % releaseVersion)
-os.system("hg tag release-%s" % releaseVersion)
+os.system("git add NEWS src/zotonic.app include/zotonic_release.hrl")
+os.system("git ci -m 'Created release %s.'" % releaseVersion)
+os.system("git tag release-%s" % releaseVersion)
 
 
 ## CREATE ARCHIVE
 
-os.system("hg archive -t zip -p zotonic zotonic-%s.zip" % releaseVersion)
-print "Created archive zotonic-%s.zip" % releaseVersion
-
+os.system("git archive --format=zip --prefix=zotonic release-%s > ../zotonic-%s.zip" % (releaseVersion, releaseVersion))
+print "Created archive ../zotonic-%s.zip" % releaseVersion
 
 # back to where we started
-os.system("hg checkout default")
+os.system("git checkout master")
