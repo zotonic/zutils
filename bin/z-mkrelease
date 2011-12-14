@@ -8,12 +8,13 @@ from zutils import Version, cmdOutput
 
 z = zutils.Zotonic()
 
-if len(sys.argv) == 1:
+if len(sys.argv) != 2:
+    print("Usage: z-mkrelease <version>")
     releaseVersion = z.nextVersion()
-elif len(sys.argv) == 2:
-    releaseVersion = sys.argv[1]
-else:
-    raise Exception("Usage: z-mkrelease <version>")
+    print("Next version: " + releaseVersion)
+    exit(1)
+
+releaseVersion = sys.argv[1]
 
 if releaseVersion in z.versions:
     raise Exception("Already released: " + releaseVersion)
