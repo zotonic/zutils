@@ -73,7 +73,7 @@ os.system("git tag release-%s" % releaseVersion)
 
 ## CREATE ARCHIVE
 
-os.system("git archive --format=zip --prefix=zotonic release-%s > ../zotonic-%s.zip" % (releaseVersion, releaseVersion))
+os.system("git archive --format=zip --prefix=zotonic/ release-%s > ../zotonic-%s.zip" % (releaseVersion, releaseVersion))
 print "Created archive ../zotonic-%s.zip" % releaseVersion
 
 # back to where we started
