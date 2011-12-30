@@ -70,11 +70,8 @@ os.system("git add NEWS src/zotonic.app include/zotonic_release.hrl")
 os.system("git ci -m 'Created release %s.'" % releaseVersion)
 os.system("git tag release-%s" % releaseVersion)
 
-
 ## CREATE ARCHIVE
-
-os.system("git archive --format=zip --prefix=zotonic/ release-%s > ../zotonic-%s.zip" % (releaseVersion, releaseVersion))
-print "Created archive ../zotonic-%s.zip" % releaseVersion
+os.system("z-archive " + releaseVersion)
 
 # back to where we started
 os.system("git checkout master")
