@@ -64,10 +64,22 @@ class Zotonic(object):
         return (frm, to)
 
 
+    def _fmtLog(self, log):
+        log = log.replace("      * ", "* ")
+        log = log.replace(':\n', ':\n\n')
+        log = re.sub(' \(cherry picked.*?\)', '', log)
+        return log
+        
     def printLog(self, buf, version):
         frm, to = self.calcLog(version)
-        buf.write(self.gitCmd("shortlog %s..%s" % (frm, to)))
+        buf.write(self._fmtLog(self.gitCmd("shortlog --format=\"* %%s\" %s..%s" % (frm, to))))
+        
 
+    def printFeatureLog(self, buf, releaseBranch=None):
+        if not releaseBranch:
+            releaseBranch = self.latestReleaseBranch
+        buf.write(self._fmtLog(self.gitCmd("shortlog --format=\"* %%s\" release-%s..%s" % (releaseBranch, "master"))))
+        
 
     def getCurrentBranch(self):
         return self.gitCmd("name-rev --name-only HEAD").strip()

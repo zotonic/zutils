@@ -13,6 +13,9 @@ else:
 
 from StringIO import StringIO
 buf = StringIO()
-z.printLog(buf, version)
+if version == "feature":
+    z.printFeatureLog(buf)
+else:
+    z.printLog(buf, version)
 print buf.getvalue()
 

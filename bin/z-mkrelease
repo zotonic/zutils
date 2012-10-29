@@ -36,7 +36,7 @@ os.system("sed -e 's/{vsn, \".*\"/{vsn, \"%s\"/' -i %s/src/zotonic.app" % (relea
 
 ## CHANGE LOG
 
-changelogFile = "%s/doc/changelogs/%s.txt" % (z.basedir, releaseVersion)
+changelogFile = "%s/doc/dev/releasenotes/rel_%s.rst" % (z.basedir, releaseVersion)
 fp = open(changelogFile, "w")
 hdr = "Zotonic %s" % releaseVersion
 fp.write(hdr+"\n")

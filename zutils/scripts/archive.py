@@ -141,7 +141,8 @@ def main():
     try:
         archiver.create(outFile)
     except Exception, e:
-        exit(2, "%s\n" % e)
+        print e
+        exit(2)
 
     print "Created " + outFile
     sys.exit(0)
