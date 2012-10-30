@@ -23,16 +23,6 @@ if Version(releaseVersion).prev not in z.versions:
     raise Exception("Version numbers have to be sequential: " + releaseVersion)
 
 
-## GO TO RELEASE BRANCH
-
-os.system("git checkout release-%s" % Version(releaseVersion).featureversion)
-
-
-## VERSION NUMBERS
-
-os.system("sed -e 's/ZOTONIC_VERSION, \".*\"/ZOTONIC_VERSION, \"%s\"/' -i %s/include/zotonic_release.hrl" % (releaseVersion, z.basedir))
-os.system("sed -e 's/{vsn, \".*\"/{vsn, \"%s\"/' -i %s/src/zotonic.app" % (releaseVersion, z.basedir))
-
 
 ## CHANGE LOG
 
@@ -54,6 +44,19 @@ editor = os.environ.get('EDITOR', 'vi')
 os.system("%s %s" % (editor, changelogFile))
 
 os.system("git add %s" % changelogFile)
+os.system("git commit -m 'Add release notes for %s'" % releaseVersion)
+commit = cmdOutput("git show|head -n 1|awk '{print $2}'")
+
+
+## GO TO RELEASE BRANCH
+
+os.system("git checkout release-%s" % Version(releaseVersion).featureversion)
+os.system("git cherry-pick -x " + commit)
+
+## VERSION NUMBERS
+
+os.system("sed -e 's/ZOTONIC_VERSION, \".*\"/ZOTONIC_VERSION, \"%s\"/' -i %s/include/zotonic_release.hrl" % (releaseVersion, z.basedir))
+os.system("sed -e 's/{vsn, \".*\"/{vsn, \"%s\"/' -i %s/src/zotonic.app" % (releaseVersion, z.basedir))
 
 print "............................... releasing................."
 
@@ -61,8 +64,8 @@ print "............................... releasing................."
 
 l = open("%s/NEWS" % z.basedir, "r").readlines()
 hdr = "Release %s, released on %s" % (releaseVersion, time.strftime("%Y-%m-%d", time.localtime()))
-l = l[:3] + [hdr+"\n", "-"*len(hdr)+"\n", "\n",
-             "This is a bugfix release. See doc/changelogs/%s.txt for all the\n" % releaseVersion, "relevant bugfixes.\n", "\n\n"] + l[3:]
+l = l[:2] + [hdr+"\n", "-"*len(hdr)+"\n", "\n",
+             "This is a bugfix release. See doc/dev/releasenotes/rel_%s.rst for all the\n" % releaseVersion, "relevant bugfixes.\n", "\n\n"] + l[2:]
 open("%s/NEWS" % z.basedir, "w").write("".join(l))
 
 ## COMMIT, TAG
