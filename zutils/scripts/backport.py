@@ -1,8 +1,6 @@
-import os
 import sys
 import optparse
 from zutils import Zotonic, errorMsg
-
 
 def main():
     parser = optparse.OptionParser()
@@ -13,22 +11,26 @@ def main():
     opts, branches = parser.parse_args()
 
     z = Zotonic()
+    
+    invalid = [b for b in branches if b not in z.releaseBranches]
+    if invalid:
+        errorMsg("Invalid branches: " + ", ".join(invalid))
 
-    if z.getCurrentBranch() != "default":
-        errorMsg("You need to be on the default branch.")
+    if z.getCurrentBranch() != "master":
+        errorMsg("You need to be on the master branch.")
 
     if not len(branches):
         branches = [z.latestReleaseBranch]
 
     if opts.revision:
-        log = z.hgCmd("log -r %s" % opts.revision)
+        log = z.gitCmd("log --pretty=oneline -1 %s" % opts.revision)
     else:
-        log = z.hgCmd("parents")
+        log = z.gitCmd("log --pretty=oneline -1")
 
-    log = z.log2dict(log)
+    revision, summary = log.strip().split(" ", 1)
 
-    print "Will backport revision %s to %s" % (log['revision'], ", ".join(branches))
-    print "(%s)" % log['summary']
+    print "Will backport revision %s to release %s" % (revision, ", ".join(branches))
+    print "(%s)" % summary
     print 
 
     if opts.pretend:
@@ -38,15 +40,13 @@ def main():
         print "Press [enter] to perform the backport."
         sys.stdin.readline()
 
-    z.hgCmd("export %s > /tmp/%s.patch" % (log['revision'], log['revision']))
-
     for b in branches:
         if b not in z.releaseBranches:
             errorMsg("Non-existing branch: "+b)
         target = "release-%s" % b
-        z.hgCmd("update "+target)
-        msg = "Backport to %s from r%s: %s" % (b, log['revision'], log['summary'])
-        z.hgCmd("import -m \"%s\" /tmp/%s.patch" % (msg, log['revision']))
+        z.gitCmd("checkout "+target)
+        z.gitCmd("merge origin/"+target)
+        z.gitCmd("cherry-pick -x " + revision)
 
-    z.hgCmd("update default")
+    z.gitCmd("checkout master")
     print "Backport OK."
