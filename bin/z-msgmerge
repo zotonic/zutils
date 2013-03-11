@@ -6,7 +6,7 @@ def cmd(x):
     return os.popen(x, "r").read().strip()
 
 
-potfiles = cmd("git st|grep modified:|grep template/.*\.pot$|awk '{print $3}'").split("\n")
+potfiles = cmd("find . -name *.pot -print0").split("\0")
 
 if not potfiles:
     print "Nothing to do."
