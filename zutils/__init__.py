@@ -15,32 +15,34 @@ class Zotonic(object):
     """ Utility class representing a Zotonic working copy. """
 
     def __init__(self):
-        if os.path.exists("bin/zotonic"):
-            executable = "bin/zotonic"
-        else:
-            executable = "zotonic"
-        self.basedir = cmdOutput("echo $(dirname $(dirname $(dirname `%s sitedir t`)))" % executable).strip()
-        self.versions = sorted(self.gitCmd("tag|grep ^release|awk '{print $1}'|awk -F- '{print $2}'").strip().split("\n"))[::-1]
-        self.releaseBranches = sorted(self.gitCmd("branch|grep ^..release|awk '{print $1}'|awk -F- '{print $2}'").strip().split("\n"))[::-1]
+        self.basedir = os.getcwd()
+        if not os.path.exists(os.path.join(self.basedir, "bin/zotonic")):
+            errorMsg("You need to run this command from the Zotonic root dir.")
+        self.versions = sorted([Version(v) for v in self.gitCmd("tag|grep ^release-|awk '{print $1}'|awk -F- '{print $2}'|grep -v '[0-9]p[0-9]'").strip().split("\n")])[::-1]
+        self.releaseBranches = sorted(self.gitCmd("branch|grep ^..release|awk -F- '{print $2}'").strip().split("\n"))[::-1]
 
 
     def gitCmd(self, cmd):
         return cmdOutput("git --work-tree=%s %s" % (self.basedir, cmd))
 
     @property
+    def currentBranch(self):
+        return self.gitCmd("rev-parse --abbrev-ref HEAD").strip().replace("release-", "")
+
+    @property
     def latestReleaseBranch(self):
-        return self.releaseBranches[0]
+        return self.versions[0].featureversion
 
     def latestVersion(self, releaseBranch=None):
         if not releaseBranch:
             releaseBranch = self.latestReleaseBranch
         prefix = re.sub("\.x", ".", releaseBranch)
-        return [v for v in self.versions if v[:len(prefix)] == prefix][0]
+        return [v for v in self.versions if str(v)[:len(prefix)] == prefix][0]
 
     def nextVersion(self, releaseBranch=None):
         if not releaseBranch:
             releaseBranch = self.latestReleaseBranch
-        return Version(self.latestVersion(releaseBranch)).next
+        return self.latestVersion(releaseBranch).next
 
 
     def calcLog(self, version):
@@ -105,3 +107,5 @@ class Version(LooseVersion):
     def featureversion(self):
         version = list(self.version)[:-1]
         return '.'.join([str(part) for part in version])+".x"
+
+

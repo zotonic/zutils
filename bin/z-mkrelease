@@ -22,13 +22,14 @@ if releaseVersion in z.versions:
 if Version(releaseVersion).prev not in z.versions:
     raise Exception("Version numbers have to be sequential: " + releaseVersion)
 
-
+if Version(releaseVersion).featureversion != z.currentBranch:
+    raise Exception("You have to be on branch: release-%s.x" % Version(releaseVersion).featureversion)
 
 ## CHANGE LOG
 
 changelogFile = "%s/doc/dev/releasenotes/rel_%s.rst" % (z.basedir, releaseVersion)
 fp = open(changelogFile, "w")
-hdr = "Zotonic %s" % releaseVersion
+hdr = "Release %s" % releaseVersion
 fp.write(hdr+"\n")
 fp.write("="*len(hdr) + "\n")
 fp.write("\n")
@@ -39,7 +40,7 @@ fp.write("\n")
 z.printLog(fp, releaseVersion)
 fp.close()
 
-# launch editor to finetine the change log
+# launch editor to finetune the change log
 editor = os.environ.get('EDITOR', 'vi')
 os.system("%s %s" % (editor, changelogFile))
 
@@ -50,16 +51,16 @@ commit = cmdOutput("git show|head -n 1|awk '{print $2}'")
 
 ## GO TO RELEASE BRANCH
 
-os.system("git checkout release-%s" % Version(releaseVersion).featureversion)
-os.system("git cherry-pick -x " + commit)
+#os.system("git checkout release-%s" % Version(releaseVersion).featureversion)
+#os.system("git cherry-pick -x " + commit)
 
 ## VERSION NUMBERS
 featureVersion = Version(releaseVersion).featureversion
 
 os.system("sed -e 's/ZOTONIC_VERSION, \".*\"/ZOTONIC_VERSION, \"%s\"/' -i %s/include/zotonic_release.hrl" % (releaseVersion, z.basedir))
 os.system("sed -e 's/{vsn, \".*\"/{vsn, \"%s\"/' -i %s/src/zotonic.app" % (releaseVersion, z.basedir))
-os.system("sed -e 's/version = \'.*\'/version = \'%s\'/' -i %s/doc/conf.py" % (featureVersion, z.basedir))
-os.system("sed -e 's/release = \'.*\'/release = \'%s\'/' -i %s/doc/conf.py" % (releaseVersion, z.basedir))
+os.system("sed -e 's/version = \'.*\'/version = \\'%s\\'/' -i %s/doc/conf.py" % (featureVersion, z.basedir))
+os.system("sed -e 's/release = \'.*\'/release = \\'%s\\'/' -i %s/doc/conf.py" % (releaseVersion, z.basedir))
 
 
 print "............................... releasing................."
@@ -73,7 +74,7 @@ l = l[:2] + [hdr+"\n", "-"*len(hdr)+"\n", "\n",
 open("%s/NEWS" % z.basedir, "w").write("".join(l))
 
 ## COMMIT, TAG
-os.system("git add NEWS src/zotonic.app include/zotonic_release.hrl")
+os.system("git add NEWS src/zotonic.app include/zotonic_release.hrl doc/conf.py")
 os.system("git ci -m 'Created release %s.'" % releaseVersion)
 os.system("git tag release-%s" % releaseVersion)
 
@@ -81,4 +82,4 @@ os.system("git tag release-%s" % releaseVersion)
 os.system("z-archive " + releaseVersion)
 
 # back to where we started
-os.system("git checkout master")
+#os.system("git checkout master")
