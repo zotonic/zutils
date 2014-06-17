@@ -58,23 +58,15 @@ commit = cmdOutput("git show|head -n 1|awk '{print $2}'")
 featureVersion = Version(releaseVersion).featureversion
 
 os.system("sed -e 's/ZOTONIC_VERSION, \".*\"/ZOTONIC_VERSION, \"%s\"/' -i %s/include/zotonic_release.hrl" % (releaseVersion, z.basedir))
-os.system("sed -e 's/{vsn, \".*\"/{vsn, \"%s\"/' -i %s/src/zotonic.app" % (releaseVersion, z.basedir))
-os.system("sed -e 's/version = \'.*\'/version = \\'%s\\'/' -i %s/doc/conf.py" % (featureVersion, z.basedir))
+os.system("sed -e 's/{vsn, \".*\"/{vsn, \"%s\"/' -i %s/src/zotonic.app.src" % (releaseVersion, z.basedir))
+#os.system("sed -e 's/version = \'.*\'/version = \\'%s\\'/' -i %s/doc/conf.py" % (featureVersion, z.basedir))
 os.system("sed -e 's/release = \'.*\'/release = \\'%s\\'/' -i %s/doc/conf.py" % (releaseVersion, z.basedir))
 
 
 print "............................... releasing................."
 
-## NEWS FILE
-
-l = open("%s/NEWS" % z.basedir, "r").readlines()
-hdr = "Release %s, released on %s" % (releaseVersion, time.strftime("%Y-%m-%d", time.localtime()))
-l = l[:2] + [hdr+"\n", "-"*len(hdr)+"\n", "\n",
-             "This is a bugfix release. See doc/dev/releasenotes/rel_%s.rst for all the\n" % releaseVersion, "relevant bugfixes.\n", "\n\n"] + l[2:]
-open("%s/NEWS" % z.basedir, "w").write("".join(l))
-
 ## COMMIT, TAG
-os.system("git add NEWS src/zotonic.app include/zotonic_release.hrl doc/conf.py")
+os.system("git add src/zotonic.app.src include/zotonic_release.hrl doc/conf.py")
 os.system("git ci -m 'Created release %s.'" % releaseVersion)
 os.system("git tag release-%s" % releaseVersion)
 
