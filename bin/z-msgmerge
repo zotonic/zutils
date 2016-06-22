@@ -9,14 +9,14 @@ def cmd(x):
 potfiles = cmd("find . -name *.pot -print0").split("\0")
 
 if not potfiles:
-    print "Nothing to do."
+    print("echo 'Nothing to do.'")
     exit()
 
 
 for potfile in potfiles:
     pofiles = glob.glob(potfile.replace("template/" + os.path.basename(potfile), "*.po"))
     for pofile in pofiles:
-        print "msgmerge -U %s %s" % (pofile, potfile)
+        print("msgmerge -U %s %s" % (pofile, potfile))
         #os.system("msgmerge -U %s %s" % (pofile, potfile))
 
 
